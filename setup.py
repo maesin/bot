@@ -4,14 +4,14 @@ setup(
     name='bot',
     version='0.0.0',
     description='A bot engine.',
-    author='Shintaro Maeda',
-    author_email='maesin@renjaku.jp',
+    author='Osnk',
+    author_email='osnk@renjaku.jp',
     url='https://github.com/maesin/bot',
     packages=['bot'],
     install_requires=['aiohttp', 'aioredis'],
     classifiers=[
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: CPython'
     ]
 )

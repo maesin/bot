@@ -1,7 +1,8 @@
-import aiohttp
 import asyncio
 import json
 import re
+
+import aiohttp
 
 
 class Message:

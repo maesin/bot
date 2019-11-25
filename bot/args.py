@@ -1,6 +1,7 @@
 import argparse
 import importlib
 import os
+
 from .spaces import Slack
 
 
@@ -8,7 +9,7 @@ def spaces(s):
     try:
         m, c = s.rsplit('.', 1)
         return getattr(importlib.import_module(m), c)
-    except:
+    except Exception:
         raise argparse.ArgumentTypeError('Unknown space')
 
 

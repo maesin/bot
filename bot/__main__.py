@@ -1,12 +1,13 @@
 import asyncio
-import bot
-import bot.args
 import datetime
-import json
 import importlib
 import importlib.util
+import json
 import re
 import traceback
+
+import bot
+import bot.args
 
 
 def hear(regex, channels=[], ambient=False):
@@ -41,6 +42,8 @@ async def call(callback, *args):
         raise e
 
 s = None
+
+
 async def event_dispatcher(c):
     while True:
         try:
@@ -57,11 +60,14 @@ async def event_dispatcher(c):
                             asyncio.ensure_future(call(action, e.message, *a))
             except bot.spaces.ChannelNotFound:
                 pass
+            except TypeError as e:  # FIXME json.load エラー
+                raise Exception(f'{m.data} is error') from e
         except asyncio.TimeoutError:
-            if s == None:
+            if s is None:
                 print('s is None')
             elif s.done():
-                print('s was done', '(cancelled)' if s.cancelled() else '(not cancelled)')
+                print('s was done', '(cancelled)'
+                      if s.cancelled() else '(not cancelled)')
             else:
                 print('s is not done')
 
@@ -103,7 +109,7 @@ async def main():
             try:
                 s = asyncio.ensure_future(task_scheduler())
                 await event_dispatcher(c)
-            except:  # An unexpected error has occurred.
+            except Exception:  # An unexpected error has occurred.
                 print(traceback.format_exc())
             finally:
                 s.cancel()
@@ -122,6 +128,7 @@ def start(command_line_args):
         importlib.import_module(m)
     print('Start bot')
     asyncio.get_event_loop().run_until_complete(main())
+
 
 if __name__ == '__main__':
     args = bot.args.parse()
