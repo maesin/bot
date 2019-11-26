@@ -8,7 +8,7 @@ setup(
     author_email='osnk@renjaku.jp',
     url='https://github.com/maesin/bot',
     packages=['bot'],
-    install_requires=['aiohttp', 'aioredis'],
+    install_requires=['aiohttp'],
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.8',
