@@ -160,7 +160,8 @@ def parse_args():
                         metavar='MODULE',
                         help='Bot modules (default: %(default)s)')
     parser.add_argument('--errorsto',
-                        help='Error destination')
+                        default='#errors',
+                        help='Error destination channel (default: %(default)s)')
     return parser.parse_args()
 
 
