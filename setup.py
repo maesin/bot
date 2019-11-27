@@ -7,7 +7,7 @@ setup(
     author='Osnk',
     author_email='osnk@renjaku.jp',
     url='https://github.com/maesin/bot',
-    packages=['bot'],
+    packages=['bot', 'bot.modules'],
     install_requires=['aiohttp'],
     classifiers=[
         'Programming Language :: Python',
