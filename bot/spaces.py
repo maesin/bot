@@ -89,7 +89,7 @@ class Slack:
             self.channels = self._create_channels(j['channels'])
             return WebSocketContextManager(s, j['url'])
 
-    async def prepare(self, ws):
+    def prepare(self, ws):
         self.ws = ws
 
     def _find_channel(self, id_or_name):
@@ -144,6 +144,7 @@ class Discord:
         self.ack = False
         self.reconnect = False
         self.ims = []
+        self.channels = []
 
     async def connect(self):
         s = aiohttp.ClientSession()
@@ -167,29 +168,8 @@ class Discord:
             await asyncio.sleep(interval / 1000)  # seconds
             self.reconnect = not self.ack  # TODO main でサポートする際の参考
 
-    async def prepare(self, ws):
+    def prepare(self, ws):
         self.ws = ws
-        async for m in self.ws:
-            e = json.loads(m.data)
-            if e['op'] == 10:
-                n = e['d']['heartbeat_interval']
-                asyncio.ensure_future(self.heartbeat(n))
-                await self.ws.send_json({
-                    'op': 2,  # Identify
-                    'd': {
-                        'token': self.token,
-                        'properties': {},
-                        'compress': False,
-                        'large_threshold': 250
-                    }
-                })
-            elif e['op'] == 0:
-                if e['t'] == 'READY':
-                    self.me = e['d']['user']['id']
-                elif e['t'] == 'GUILD_CREATE':
-                    c = e['d']['channels']
-                    self.channels = [Channel(x['id'], x['name']) for x in c]
-                    break
 
     def _find_channel(self, id_or_name):
         for x in self.ims + self.channels:
@@ -197,26 +177,44 @@ class Discord:
                 return x
         raise ChannelNotFound(id_or_name)
 
-    def parse(self, event):
+    async def parse(self, event):
         e = json.loads(event)
-        if e['op'] == 11:
-            self.ack = True
-            return None  # TODO None じゃなくて ack イベント定義してもいいかも
-        r = Event(self)
-        if 't' in e:
-            if e['t'] == 'MESSAGE_CREATE':
+        if e['op'] == 0:
+            if e['t'] == 'READY':
+                self.me = e['d']['user']['id']
+            elif e['t'] == 'GUILD_CREATE':
+                c = e['d']['channels']
+                self.channels.extend(Channel(x['id'], x['name']) for x in c)
+            elif e['t'] == 'CHANNEL_CREATE':
+                if e['d']['type'] == 1:  # DM
+                    c = e['d']['id']
+                    if not [x for x in self.ims if x == c]:
+                        self.ims.append(Channel(c, c))
+            elif e['t'] == 'MESSAGE_CREATE':
+                r = Event(self)
                 c = e['d']['channel_id']
                 r.channel = self._find_channel(c)
                 text = e['d']['content']
                 r.message = Message(self, r.channel, e['d']['author']['id'],
                                     re.findall('<@([^>]+)>', text),
                                     text, lambda u: f'<@{u}>')
-            elif e['t'] == 'CHANNEL_CREATE':
-                if e['d']['type'] == 1:  # DM
-                    c = e['d']['id']
-                    if not [x for x in self.ims if x == c]:
-                        self.ims.append(Channel(c, c))
-        return r
+                return r
+            return None  # TODO 何かしら返せば共通化に繋がる？
+        elif e['op'] == 10:
+            n = e['d']['heartbeat_interval']
+            asyncio.ensure_future(self.heartbeat(n))
+            await self.ws.send_json({
+                'op': 2,  # Identify
+                'd': {
+                    'token': self.token,
+                    'properties': {},
+                    'compress': False,
+                    'large_threshold': 250
+                }
+            })
+        elif e['op'] == 11:
+            self.ack = True
+            return None  # TODO None じゃなくて ack イベント定義してもいいかも
 
     async def post(self, channel, message, attachments=None, thread_ts=None):
         if isinstance(channel, str):

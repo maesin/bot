@@ -54,7 +54,10 @@ async def event_dispatcher(c):
         # async for m in c:
             print('Recived', m)
             try:
-                e = space.parse(m.data)
+                if asyncio.iscoroutinefunction(space.parse):
+                    e = await space.parse(m.data)
+                else:
+                    e = space.parse(m.data)
                 if e and e.message and e.message.user != space.me:
                     for hear, action in hears:
                         r = hear(e.message)
@@ -107,7 +110,10 @@ async def async_main():
     while True:
         async with await space.connect() as c:
             print('Connected')
-            await space.prepare(c)
+            if asyncio.iscoroutinefunction(space.prepare):
+                await space.prepare(c)
+            else:
+                space.prepare(c)
             print('Prepared')
             try:
                 s = asyncio.ensure_future(task_scheduler())
